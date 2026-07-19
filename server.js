@@ -160,6 +160,12 @@ server.listen(PORT,()=>{console.log('\n🚀 KRMU Bites → http://localhost:'+PO
 
 // ─── CANTEEN AUTH ──────────────────────────────────────────────────────────
 const CANTEEN_DEFAULTS={'A Block':'ablock@123','B Block – Basil':'basil@123','C Block – Nescafé':'nescafe@123','C Block – CCD':'ccd@123','C Block – Main':'main@123'};
-function getCanteenPw(canteen){const db=readDB();return(db.settings&&db.settings.canteenPasswords&&db.settings.canteenPasswords[canteen])||CANTEEN_DEFAULTS[canteen]||'canteen@123';}
+// Priority: ENV VAR → DB (set via portal UI) → hardcoded default
+const CANTEEN_ENV_KEYS={'A Block':'CANTEEN_PW_ABLOCK','B Block – Basil':'CANTEEN_PW_BASIL','C Block – Nescafé':'CANTEEN_PW_NESCAFE','C Block – CCD':'CANTEEN_PW_CCD','C Block – Main':'CANTEEN_PW_MAIN'};
+function getCanteenPw(canteen){
+  const envKey=CANTEEN_ENV_KEYS[canteen];
+  if(envKey&&process.env[envKey])return process.env[envKey];
+  const db=readDB();return(db.settings&&db.settings.canteenPasswords&&db.settings.canteenPasswords[canteen])||CANTEEN_DEFAULTS[canteen]||'canteen@123';
+}
 app.post('/api/auth/canteen',(req,res)=>{const{canteen,password}=req.body;if(!canteen||!password)return res.status(400).json({error:'Missing fields'});if(password===getCanteenPw(canteen))res.json({success:true,canteen});else res.status(401).json({error:'Invalid password'});});
-app.patch('/api/auth/canteen/password',(req,res)=>{const{canteen,currentPassword,newPassword}=req.body;if(!newPassword||newPassword.length<6)return res.status(400).json({error:'Min 6 characters'});if(currentPassword!==getCanteenPw(canteen))return res.status(401).json({error:'Current password incorrect'});const db=readDB();if(!db.settings)db.settings={};if(!db.settings.canteenPasswords)db.settings.canteenPasswords={};db.settings.canteenPasswords[canteen]=newPassword;writeDB(db);res.json({success:true});});
+app.patch('/api/auth/canteen/password',(req,res)=>{const{canteen,currentPassword,newPassword}=req.body;if(!newPassword||newPassword.length<6)return res.status(400).json({error:'Min 6 characters'});if(currentPassword!==getCanteenPw(canteen))return res.status(401).json({error:'Current password incorrect'});if(CANTEEN_ENV_KEYS[canteen]&&process.env[CANTEEN_ENV_KEYS[canteen]])return res.status(400).json({error:'This canteen password is locked by an environment variable. Change it on Render instead.'});const db=readDB();if(!db.settings)db.settings={};if(!db.settings.canteenPasswords)db.settings.canteenPasswords={};db.settings.canteenPasswords[canteen]=newPassword;writeDB(db);res.json({success:true});});
