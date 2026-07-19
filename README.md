@@ -1,7 +1,8 @@
 # 🍽️ KRMU Bites — Full Stack Campus Canteen System
 
 Premium smart food ordering platform for KR Mangalam University.
-Luxury dark theme inspired by Zara · Ralph Lauren · H&M.
+
+DeployRender - https://krmu-zone.onrender.com
 
 ## 🚀 Quick Start
 
